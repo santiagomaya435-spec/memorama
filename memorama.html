@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Memorama Liga MX</title>
+
+<style>
+    body {
+        font-family: Arial;
+        text-align: center;
+        background: #0b1320;
+        color: white;
+    }
+
+    #loginBox {
+        margin-top: 120px;
+    }
+
+    input {
+        padding: 10px;
+        font-size: 18px;
+        text-align: center;
+        border-radius: 8px;
+        border: none;
+        outline: none;
+    }
+
+    button {
+        padding: 10px 20px;
+        font-size: 16px;
+        margin-top: 10px;
+        cursor: pointer;
+        border-radius: 8px;
+    }
+
+    #gameContainer {
+        display: none;
+    }
+
+    h1 { margin-top: 20px; }
+
+    #game {
+        display: grid;
+        grid-template-columns: repeat(6, 110px);
+        gap: 10px;
+        justify-content: center;
+        margin-top: 20px;
+    }
+
+    .card {
+        width: 110px;
+        height: 110px;
+        background: #1e2a3a;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        overflow: hidden;
+    }
+
+    .card.flipped { background: white; }
+    .card.matched { background: #00c853; cursor: default; }
+
+    .logo {
+        width: 85px;
+        height: 85px;
+        object-fit: contain;
+    }
+
+    .fallback {
+        font-size: 12px;
+        color: black;
+        font-weight: bold;
+    }
+</style>
+</head>
+
+<body>
+
+<!-- 🔐 LOGIN -->
+<div id="loginBox">
+    <h2>🔐 Ingresa el código para jugar</h2>
+    <input type="password" id="codeInput" placeholder="Código">
+    <br>
+    <button onclick="checkCode()">Entrar</button>
+    <p id="error" style="color:red;"></p>
+</div>
+
+<!-- 🎮 JUEGO -->
+<div id="gameContainer">
+    <h1>⚽ Memorama Liga MX</h1>
+    <p>Encuentra los escudos iguales</p>
+
+    <div id="game"></div>
+    <button onclick="startGame()">🔄 Reiniciar</button>
+</div>
+
+<script>
+const teams = [
+    "America","Chivas","CruzAzul","Pumas",
+    "Tigres","Rayados","Toluca","Pachuca",
+    "Leon","Santos","Atlas","Puebla",
+    "Queretaro","Juarez","Tijuana","Mazatlan",
+    "Necaxa","SanLuis"
+];
+
+const logos = {
+    America: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/america.png",
+    Chivas: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/chivas.png",
+    CruzAzul: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/cruz-azul.png",
+    Pumas: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/pumas.png",
+    Tigres: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/tigres.png",
+    Rayados: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/monterrey.png",
+    Toluca: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/toluca.png",
+    Pachuca: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/pachuca.png",
+    Leon: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/leon.png",
+    Santos: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/santos.png",
+    Atlas: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/atlas.png",
+    Puebla: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/puebla.png",
+    Queretaro: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/queretaro.png",
+    Juarez: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/juarez.png",
+    Tijuana: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/tijuana.png",
+    Mazatlan: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/mazatlan.png",
+    Necaxa: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/necaxa.png",
+    SanLuis: "https://cdn.jsdelivr.net/gh/luukdv/logo-liga-mx/logos/san-luis.png"
+};
+
+let cards = [];
+let firstCard = null;
+let lockBoard = false;
+
+function checkCode() {
+    const code = document.getElementById("codeInput").value;
+    const error = document.getElementById("error");
+
+    if (code === "000") {
+        document.getElementById("loginBox").style.display = "none";
+        document.getElementById("gameContainer").style.display = "block";
+        startGame();
+    } else {
+        error.textContent = "❌ Código incorrecto";
+    }
+}
+
+function shuffle(array) {
+    return array.sort(() => Math.random() - 0.5);
+}
+
+function createLogo(team) {
+    const container = document.createElement("div");
+
+    const img = document.createElement("img");
+    img.className = "logo";
+    img.src = logos[team];
+
+    img.onerror = () => {
+        container.innerHTML = `<div class="fallback">${team}</div>`;
+    };
+
+    container.appendChild(img);
+    return container;
+}
+
+function startGame() {
+    const game = document.getElementById("game");
+    game.innerHTML = "";
+
+    cards = shuffle([...teams, ...teams]);
+
+    firstCard = null;
+    lockBoard = false;
+
+    cards.forEach(team => {
+        const card = document.createElement("div");
+        card.classList.add("card");
+        card.dataset.team = team;
+
+        card.innerHTML = "❓";
+
+        card.addEventListener("click", () => flipCard(card));
+
+        game.appendChild(card);
+    });
+}
+
+function flipCard(card) {
+    if (lockBoard || card.classList.contains("flipped") || card.classList.contains("matched")) return;
+
+    card.classList.add("flipped");
+    card.innerHTML = "";
+    card.appendChild(createLogo(card.dataset.team));
+
+    if (!firstCard) {
+        firstCard = card;
+        return;
+    }
+
+    if (firstCard.dataset.team === card.dataset.team) {
+        firstCard.classList.add("matched");
+        card.classList.add("matched");
+        firstCard = null;
+    } else {
+        lockBoard = true;
+
+        setTimeout(() => {
+            firstCard.classList.remove("flipped");
+            card.classList.remove("flipped");
+
+            firstCard.innerHTML = "❓";
+            card.innerHTML = "❓";
+
+            firstCard = null;
+            lockBoard = false;
+        }, 800);
+    }
+}
+</script>
+
+</body>
+</html>
